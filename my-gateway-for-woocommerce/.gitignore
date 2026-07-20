@@ -1,8 +1,0 @@
-# وابستگی‌های کامپوزر — با اجرای composer install ساخته می‌شوند.
-/vendor/
-composer.lock
-
-# فایل‌های سیستمی و موقت.
-.DS_Store
-Thumbs.db
-*.log
