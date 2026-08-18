@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to create and publish, for example v2.0.0"
+        required: true
+        default: "v2.0.0"
 
 permissions:
   contents: write
@@ -33,20 +39,36 @@ jobs:
       - name: Test
         run: python -m pytest -q
 
-      - name: Extract release notes
-        id: notes
+      - name: Resolve tag
+        id: tag
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.version }}"
+          else
+            TAG="$GITHUB_REF_NAME"
+          fi
+          echo "name=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes
+        run: |
+          VERSION="${{ steps.tag.outputs.name }}"
+          VERSION="${VERSION#v}"
           awk -v version="$VERSION" '
             $0 ~ "^## \\[" version "\\]" { capture = 1; next }
             capture && /^## \[/ { exit }
             capture { print }
           ' CHANGELOG.md > release-notes.md
           if [ ! -s release-notes.md ]; then
-            echo "Release $GITHUB_REF_NAME" > release-notes.md
+            echo "Release ${{ steps.tag.outputs.name }}" > release-notes.md
           fi
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
+          TAG: ${{ steps.tag.outputs.name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file release-notes.md
+          else
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file release-notes.md
+          fi
