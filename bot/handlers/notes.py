@@ -8,10 +8,10 @@ from aiogram.types import Message, ReplyParameters
 from bot.config import Settings
 from bot.db import Database
 from bot.handlers.terminal import clear_terminal
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.utils.formatting import clean
 from bot.utils.parsing import split_command_args
-from bot.utils.permissions import is_admin, is_group
 
 router = Router(name="notes")
 
@@ -29,15 +29,6 @@ def extract_media(message: Message) -> tuple[str, str]:
     return "text", ""
 
 
-async def _require_admin(message: Message, db: Database, settings: Settings, lang: str) -> bool:
-    if not is_group(message.chat.type):
-        return True
-    if message.from_user is None:
-        return False
-    if await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        return True
-    await message.reply(t("common.no_permission", lang))
-    return False
 
 
 async def send_stored(bot: Bot, chat_id: int, reply_to: int | None, item: dict[str, str]) -> None:
@@ -71,7 +62,7 @@ async def send_stored(bot: Bot, chat_id: int, reply_to: int | None, item: dict[s
 
 @router.message(Command("save", "addnote"))
 async def cmd_save(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "notes"):
         return
     args = split_command_args(message.text or message.caption)
     if not args:
@@ -111,7 +102,7 @@ async def cmd_clear(message: Message, lang: str, db: Database, settings: Setting
     if args and args[0].lower() in {"--terminal", "-t", "terminal"}:
         await clear_terminal(message, lang, db, settings)
         return
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "notes"):
         return
     if not args:
         await message.reply(t("notes.need_name", lang))

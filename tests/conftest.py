@@ -15,6 +15,7 @@ from aiogram.types import (
     Chat,
     ChatMemberAdministrator,
     ChatMemberMember,
+    ChatMemberOwner,
     Message,
     User,
 )
@@ -39,6 +40,7 @@ class RecordingSession(BaseSession):
         super().__init__()
         self.calls: list[TelegramMethod[Any]] = []
         self.admins: set[int] = {ADMIN_ID, OWNER_ID, BOT_ID}
+        self.creators: set[int] = set()
 
     async def close(self) -> None:
         return None
@@ -52,11 +54,31 @@ class RecordingSession(BaseSession):
 
         if name == "GetMe":
             return BOT_USER
+        if name == "GetChatAdministrators":
+            return [self._member(user_id) for user_id in sorted(self.admins | self.creators)]
         if name == "GetChatMember":
-            user_id = getattr(method, "user_id", 0)
-            user = User(id=user_id, is_bot=user_id == BOT_ID, first_name=f"user{user_id}")
-            if user_id in self.admins:
-                return ChatMemberAdministrator(
+            return self._member(getattr(method, "user_id", 0))
+        if name in {"SendMessage", "EditMessageText"}:
+            return Message(
+                message_id=500 + len(self.calls),
+                date=0,
+                chat=Chat(id=getattr(method, "chat_id", GROUP_ID), type="supergroup"),
+                from_user=BOT_USER,
+                text=getattr(method, "text", ""),
+            )
+        return True
+
+    def _member(self, user_id: int) -> Any:
+        user = User(
+            id=user_id,
+            is_bot=user_id == BOT_ID,
+            first_name="LinuxBot" if user_id == BOT_ID else f"user{user_id}",
+            username=None if user_id == BOT_ID else f"user{user_id}",
+        )
+        if user_id in self.creators:
+            return ChatMemberOwner(status="creator", user=user, is_anonymous=False)
+        if user_id in self.admins:
+            return ChatMemberAdministrator(
                     status="administrator",
                     user=user,
                     can_be_edited=False,
@@ -73,16 +95,7 @@ class RecordingSession(BaseSession):
                     can_edit_stories=True,
                     can_delete_stories=True,
                 )
-            return ChatMemberMember(status="member", user=user)
-        if name in {"SendMessage", "EditMessageText"}:
-            return Message(
-                message_id=500 + len(self.calls),
-                date=0,
-                chat=Chat(id=getattr(method, "chat_id", GROUP_ID), type="supergroup"),
-                from_user=BOT_USER,
-                text=getattr(method, "text", ""),
-            )
-        return True
+        return ChatMemberMember(status="member", user=user)
 
     def sent_texts(self) -> list[str]:
         texts = []

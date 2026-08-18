@@ -9,10 +9,11 @@ from bot.config import Settings
 from bot.db import Database
 from bot.filters import IsGroup
 from bot.handlers.locks import enforce_bot_lock
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.utils.formatting import render_template
 from bot.utils.parsing import command_payload, split_command_args
-from bot.utils.permissions import bot_can, is_admin
+from bot.utils.permissions import bot_can
 
 router = Router(name="greetings")
 router.message.filter(IsGroup())
@@ -21,13 +22,6 @@ ON_VALUES = {"on", "yes", "true", "enable", "1"}
 OFF_VALUES = {"off", "no", "false", "disable", "0"}
 
 
-async def _require_admin(message: Message, db: Database, settings: Settings, lang: str) -> bool:
-    if message.from_user is None:
-        return False
-    if await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        return True
-    await message.reply(t("common.no_permission", lang))
-    return False
 
 
 def _switch(args: list[str]) -> bool | None:
@@ -54,28 +48,28 @@ async def _toggle(message: Message, lang: str, db: Database, field: str, key: st
 
 @router.message(Command("welcome"))
 async def cmd_welcome(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     await _toggle(message, lang, db, "welcome_on", "greetings.welcome_state")
 
 
 @router.message(Command("goodbye"))
 async def cmd_goodbye(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     await _toggle(message, lang, db, "goodbye_on", "greetings.goodbye_state")
 
 
 @router.message(Command("cleanservice"))
 async def cmd_cleanservice(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     await _toggle(message, lang, db, "cleanservice", "greetings.cleanservice_state")
 
 
 @router.message(Command("setwelcome"))
 async def cmd_setwelcome(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     text = command_payload(message.text or "")
     if not text and message.reply_to_message is not None:
@@ -90,7 +84,7 @@ async def cmd_setwelcome(message: Message, lang: str, db: Database, settings: Se
 
 @router.message(Command("setgoodbye"))
 async def cmd_setgoodbye(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     text = command_payload(message.text or "")
     if not text and message.reply_to_message is not None:

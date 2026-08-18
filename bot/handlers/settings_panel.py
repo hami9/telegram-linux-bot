@@ -17,8 +17,9 @@ from bot.keyboards import (
     settings_keyboard,
     warns_keyboard,
 )
+from bot.utils.access import effective_rights, require_right
 from bot.utils.formatting import chat_title
-from bot.utils.permissions import is_admin, is_group
+from bot.utils.permissions import is_group
 
 router = Router(name="settings")
 
@@ -71,7 +72,10 @@ async def _guard(callback: CallbackQuery, db: Database, settings: Settings, lang
         return True
     if callback.from_user is None:
         return False
-    allowed = await is_admin(callback.bot, db, message.chat.id, callback.from_user.id, settings.owner_id)
+    rights = await effective_rights(
+        callback.bot, db, message.chat.id, callback.from_user.id, settings.owner_id
+    )
+    allowed = rights.get("settings", False)
     if not allowed:
         await callback.answer(t("common.admin_only_button", lang), show_alert=True)
     return allowed
@@ -88,20 +92,16 @@ async def _edit(callback: CallbackQuery, text: str, markup: object) -> None:
 
 @router.message(Command("settings", "setting", "panel"))
 async def cmd_settings(message: Message, lang: str, settings: Settings, db: Database) -> None:
-    if is_group(message.chat.type) and message.from_user is not None:
-        if not await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-            await message.reply(t("common.no_permission", lang))
-            return
+    if not await require_right(message, db, settings, lang, "settings"):
+        return
     text, markup = await _render_main(message, lang, settings, db)
     await message.answer(text, reply_markup=markup)
 
 
 @router.message(Command("lang", "language", "setlang"))
 async def cmd_lang(message: Message, lang: str, settings: Settings, db: Database) -> None:
-    if is_group(message.chat.type) and message.from_user is not None:
-        if not await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-            await message.reply(t("common.no_permission", lang))
-            return
+    if not await require_right(message, db, settings, lang, "settings"):
+        return
     await message.answer(
         t("settings.language_title", lang, language=language_name(lang)),
         reply_markup=language_keyboard(lang),

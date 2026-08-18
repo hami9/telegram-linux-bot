@@ -5,7 +5,7 @@ from typing import Any, Awaitable, Callable
 
 from aiogram import BaseMiddleware
 from aiogram.exceptions import TelegramAPIError
-from aiogram.types import CallbackQuery, Message, TelegramObject, Update
+from aiogram.types import CallbackQuery, ChatMemberUpdated, Message, TelegramObject, Update
 
 from bot.config import Settings
 from bot.db import Database
@@ -32,6 +32,8 @@ class ContextMiddleware(BaseMiddleware):
 
         user = data.get("event_from_user")
         chat = message.chat if message else None
+        if chat is None and isinstance(event, ChatMemberUpdated):
+            chat = event.chat
 
         chat_config = None
         if chat is not None:

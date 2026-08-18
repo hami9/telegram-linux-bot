@@ -10,10 +10,11 @@ from bot.config import Settings
 from bot.constants import LOCK_TYPES
 from bot.db import Database
 from bot.filters import IsGroup
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.utils.formatting import clean
 from bot.utils.parsing import split_command_args
-from bot.utils.permissions import bot_can, is_admin, is_chat_admin
+from bot.utils.permissions import bot_can, is_chat_admin
 
 router = Router(name="locks")
 router.message.filter(IsGroup())
@@ -21,18 +22,11 @@ router.message.filter(IsGroup())
 LINK_ENTITIES = {MessageEntityType.URL, MessageEntityType.TEXT_LINK}
 
 
-async def _require_admin(message: Message, db: Database, settings: Settings, lang: str) -> bool:
-    if message.from_user is None:
-        return False
-    if await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        return True
-    await message.reply(t("common.no_permission", lang))
-    return False
 
 
 @router.message(Command("lock"))
 async def cmd_lock(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "locks"):
         return
     args = split_command_args(message.text or "")
     lock_type = args[0].lower() if args else ""
@@ -45,7 +39,7 @@ async def cmd_lock(message: Message, lang: str, db: Database, settings: Settings
 
 @router.message(Command("unlock"))
 async def cmd_unlock(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "locks"):
         return
     args = split_command_args(message.text or "")
     lock_type = args[0].lower() if args else ""

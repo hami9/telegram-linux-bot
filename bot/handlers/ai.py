@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aiogram import F, Router
+from aiogram import Router
 from aiogram.enums import ChatAction
 from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command
@@ -8,12 +8,13 @@ from aiogram.types import Message
 
 from bot.config import Settings
 from bot.db import Database
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.services.gemini import GeminiClient, GeminiError
 from bot.services.ratelimit import CooldownLimiter
 from bot.utils.formatting import chunks, clean
 from bot.utils.parsing import command_payload
-from bot.utils.permissions import is_admin, is_group
+from bot.utils.permissions import is_group
 
 router = Router(name="ai")
 
@@ -24,10 +25,8 @@ OFF_VALUES = {"off", "disable", "stop", "false", "0"}
 
 
 async def _toggle(message: Message, lang: str, db: Database, settings: Settings, state: bool) -> None:
-    if is_group(message.chat.type) and message.from_user is not None:
-        if not await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-            await message.reply(t("common.no_permission", lang))
-            return
+    if not await require_right(message, db, settings, lang, "ai"):
+        return
     await db.set_chat_field(message.chat.id, "ai_enabled", state)
     await message.reply(t("ai.on", lang) if state else t("ai.off", lang))
 

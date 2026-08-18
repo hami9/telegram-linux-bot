@@ -10,6 +10,7 @@ Everything is free, forever. No premium tier, no paid features, no hidden gates.
 
 ## 🚀 Features
 
+* **🔑 Automatic roles per group** — the moment the bot joins a group it reads the member list and recognises the **owner** and every **admin** on its own, then keeps that in sync whenever someone is promoted, demoted or leaves. Each admin starts with permissions derived from their real Telegram rights; the group owner can grant or revoke any single one with a button, and admins can adjust what a member is allowed to send.
 * **🧠 AI core with an in-Telegram switch** — `/settings` opens an inline panel with a live `🧠 AI: ON/OFF` button. One tap flips the AI for that chat and the panel redraws itself. `/ai on` and `/ai off` do the same from text, and the bot owner has a global kill switch.
 * **🌐 8 interface languages** — English (default), فارسی, العربية, Türkçe, Русский, Italiano, 中文, 日本語. Admins set the language per group; each user can set their own in private chat. AI answers follow the chat's language.
 * **🛡 Full moderation** — ban, timed ban, silent ban, kick, mute, timed mute, promote, demote, pin, purge, user cards.
@@ -36,6 +37,20 @@ Everything is free, forever. No premium tier, no paid features, no hidden gates.
 | `/pin`, `/unpin` | Pin controls |
 | `/purge`, `/del` | Delete up to the replied message, or just it |
 | `/info`, `/id`, `/admins`, `/link` | Chat and user information |
+
+### Roles & permissions
+| Command | Action | Who |
+| :--- | :--- | :--- |
+| `/staff` | Owner and admins with how many permissions each holds | Everyone |
+| `/sync` | Read the admin list from Telegram again | Settings permission |
+| `/perms` | Panel to grant or revoke a single permission of an admin | Group owner |
+| `/mperms` | Panel to allow or block what a member may send | Mute permission |
+
+Permissions: `Ban` · `Mute` · `Warn` · `Delete` · `Pin` · `Promote` · `Settings` · `Locks` · `Notes` · `AI switch` · `Alias` · `Permissions`
+
+Defaults come from the admin's own Telegram rights — an admin without *ban users* in Telegram does not get the bot's Ban permission either. `Permissions` is off by default and only the group creator (or the bot owner) holds it, until they hand it to someone else. Every override is per group, and it is dropped automatically when the person stops being an admin.
+
+Member permissions map onto Telegram's own restrictions: `Messages`, `Media`, `Stickers & GIFs`, `Polls`, `Link previews`, `Invite`, `Pin`, `Chat info`.
 
 ### Warnings
 `/warn` · `/dwarn` · `/unwarn` · `/resetwarn` · `/warns` · `/warnlimit 3` · `/warnmode mute|kick|ban`
@@ -152,7 +167,7 @@ pip install pytest pytest-asyncio
 python -m pytest
 ```
 
-The suite checks that all 8 locales carry the same keys and placeholders, that durations and user targets parse correctly, that the database round-trips every setting, and it drives the real dispatcher through a mocked Telegram session — the AI toggle, language switching, warnings, notes, filters, locks and antiflood all run end to end.
+The suite checks that all 8 locales carry the same keys and placeholders, that durations and user targets parse correctly, that the database round-trips every setting, and it drives the real dispatcher through a mocked Telegram session — role detection on join, granting and revoking an admin permission, member restrictions, the AI toggle, language switching, warnings, notes, filters, locks and antiflood all run end to end.
 
 ---
 
@@ -168,7 +183,8 @@ bot/keyboards.py         inline panels
 bot/constants.py         locks, modes, permission sets
 bot/i18n/                translation loader and the 8 locale files
 bot/services/            Gemini client and rate limiting
-bot/handlers/            one module per feature
+bot/handlers/            one module per feature (roles.py holds the role sync and permission panels)
+bot/utils/access.py      role resolution, effective permissions, staff sync
 tests/                   pytest suite
 ```
 
@@ -180,6 +196,7 @@ tests/                   pytest suite
 ۲. فایل `.env.example` را به `.env` کپی کن و `BOT_TOKEN` و `OWNER_ID` را بگذار. اگر کلید `GEMINI_API_KEY` را هم بگذاری، هسته‌ی هوش مصنوعی فعال می‌شود.
 ۳. با `python main.py` ربات را بالا بیاور.
 ۴. ربات را به گروه اضافه کن، ادمینش کن و `/settings` را بزن؛ از همان‌جا با یک دکمه هوش مصنوعی را روشن یا خاموش کن و زبان گروه را از بین ۸ زبان انتخاب کن.
+۵. ربات به‌محض ورود، اونر و ادمین‌های گروه را خودش می‌شناسد. اونر با `/perms` می‌تواند دسترسی هر ادمین را تک‌به‌تک کم یا زیاد کند و ادمین‌ها با `/mperms` تعیین می‌کنند یک ممبر چه چیزی بفرستد. `/staff` هم لیست کادر مدیریت را نشان می‌دهد.
 
 ---
 

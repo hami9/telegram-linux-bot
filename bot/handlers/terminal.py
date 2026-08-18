@@ -6,9 +6,10 @@ from aiogram.types import Message
 from bot.config import Settings
 from bot.db import Database
 from bot.handlers.admin import punish, purge_range
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.utils.formatting import clean, full_name
-from bot.utils.permissions import bot_can, is_admin, is_chat_admin, privilege_level
+from bot.utils.permissions import bot_can, is_chat_admin, privilege_level
 from bot.utils.targeting import resolve_target
 
 router = Router(name="terminal")
@@ -37,8 +38,7 @@ async def cmd_whoami(message: Message, lang: str, db: Database, settings: Settin
 async def cmd_userdel(message: Message, lang: str, db: Database, settings: Settings) -> None:
     if message.from_user is None:
         return
-    if not await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        await message.reply(t("common.no_permission", lang))
+    if not await require_right(message, db, settings, lang, "ban"):
         return
     if not await bot_can(message.bot, message.chat.id, "can_restrict_members"):
         await message.reply(t("common.need_right", lang, right="can_restrict_members"))
@@ -81,8 +81,7 @@ async def cmd_clear_terminal(message: Message, lang: str, db: Database, settings
 async def clear_terminal(message: Message, lang: str, db: Database, settings: Settings) -> None:
     if message.from_user is None:
         return
-    if not await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        await message.reply(t("common.no_permission", lang))
+    if not await require_right(message, db, settings, lang, "delete"):
         return
     if not await bot_can(message.bot, message.chat.id, "can_delete_messages"):
         await message.reply(t("common.need_right", lang, right="can_delete_messages"))

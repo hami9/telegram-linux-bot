@@ -42,7 +42,12 @@ def build_dispatcher(
     dispatcher["gemini"] = gemini
 
     dispatcher.update.outer_middleware(ErrorGuardMiddleware())
-    for observer in (dispatcher.message, dispatcher.callback_query):
+    for observer in (
+        dispatcher.message,
+        dispatcher.callback_query,
+        dispatcher.my_chat_member,
+        dispatcher.chat_member,
+    ):
         observer.outer_middleware(ChatRegistryMiddleware())
         observer.outer_middleware(ContextMiddleware())
 

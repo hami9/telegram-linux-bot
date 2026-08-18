@@ -10,10 +10,11 @@ from bot.config import Settings
 from bot.constants import MUTED_PERMISSIONS, UNMUTED_PERMISSIONS
 from bot.db import Database
 from bot.filters import IsGroup
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.utils.formatting import chat_title, clean, mention
 from bot.utils.parsing import humanize_duration, parse_duration, split_command_args, until_date
-from bot.utils.permissions import bot_can, get_member, is_admin, is_chat_admin, privilege_level
+from bot.utils.permissions import bot_can, get_member, is_chat_admin, privilege_level
 from bot.utils.targeting import Target, resolve_target
 
 router = Router(name="admin")
@@ -22,16 +23,7 @@ router.message.filter(IsGroup())
 PURGE_BATCH = 100
 
 
-async def _require_admin(message: Message, db: Database, settings: Settings, lang: str) -> bool:
-    if message.from_user is None:
-        return False
-    if await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        return True
-    await message.reply(t("common.no_permission", lang))
-    return False
-
-
-async def _require_right(message: Message, lang: str, right: str) -> bool:
+async def _bot_needs(message: Message, lang: str, right: str) -> bool:
     if await bot_can(message.bot, message.chat.id, right):
         return True
     await message.reply(t("common.need_right", lang, right=right))
@@ -89,7 +81,7 @@ async def punish(
 
 @router.message(Command("ban", "sban"))
 async def cmd_ban(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "ban") or not await _bot_needs(
         message, lang, "can_restrict_members"
     ):
         return
@@ -120,7 +112,7 @@ async def cmd_ban(message: Message, lang: str, db: Database, settings: Settings)
 
 @router.message(Command("tban", "tempban"))
 async def cmd_tban(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "ban") or not await _bot_needs(
         message, lang, "can_restrict_members"
     ):
         return
@@ -150,7 +142,7 @@ async def cmd_tban(message: Message, lang: str, db: Database, settings: Settings
 
 @router.message(Command("unban"))
 async def cmd_unban(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "ban") or not await _bot_needs(
         message, lang, "can_restrict_members"
     ):
         return
@@ -169,7 +161,7 @@ async def cmd_unban(message: Message, lang: str, db: Database, settings: Setting
 
 @router.message(Command("kick", "punch"))
 async def cmd_kick(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "ban") or not await _bot_needs(
         message, lang, "can_restrict_members"
     ):
         return
@@ -198,7 +190,7 @@ async def cmd_kickme(message: Message, lang: str, db: Database, settings: Settin
     if await is_chat_admin(message.bot, message.chat.id, message.from_user.id):
         await message.reply(t("common.target_is_admin", lang))
         return
-    if not await _require_right(message, lang, "can_restrict_members"):
+    if not await _bot_needs(message, lang, "can_restrict_members"):
         return
     if not await punish(message.bot, message.chat.id, message.from_user.id, "kick"):
         await message.reply(t("common.error", lang))
@@ -208,7 +200,7 @@ async def cmd_kickme(message: Message, lang: str, db: Database, settings: Settin
 
 @router.message(Command("mute"))
 async def cmd_mute(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "mute") or not await _bot_needs(
         message, lang, "can_restrict_members"
     ):
         return
@@ -232,7 +224,7 @@ async def cmd_mute(message: Message, lang: str, db: Database, settings: Settings
 
 @router.message(Command("tmute", "tempmute"))
 async def cmd_tmute(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "mute") or not await _bot_needs(
         message, lang, "can_restrict_members"
     ):
         return
@@ -262,7 +254,7 @@ async def cmd_tmute(message: Message, lang: str, db: Database, settings: Setting
 
 @router.message(Command("unmute"))
 async def cmd_unmute(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "mute") or not await _bot_needs(
         message, lang, "can_restrict_members"
     ):
         return
@@ -283,7 +275,7 @@ async def cmd_unmute(message: Message, lang: str, db: Database, settings: Settin
 
 @router.message(Command("promote"))
 async def cmd_promote(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "promote") or not await _bot_needs(
         message, lang, "can_promote_members"
     ):
         return
@@ -310,7 +302,7 @@ async def cmd_promote(message: Message, lang: str, db: Database, settings: Setti
 
 @router.message(Command("demote"))
 async def cmd_demote(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "promote") or not await _bot_needs(
         message, lang, "can_promote_members"
     ):
         return
@@ -340,7 +332,7 @@ async def cmd_demote(message: Message, lang: str, db: Database, settings: Settin
 
 @router.message(Command("pin"))
 async def cmd_pin(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "pin") or not await _bot_needs(
         message, lang, "can_pin_messages"
     ):
         return
@@ -361,7 +353,7 @@ async def cmd_pin(message: Message, lang: str, db: Database, settings: Settings)
 
 @router.message(Command("unpin"))
 async def cmd_unpin(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "pin") or not await _bot_needs(
         message, lang, "can_pin_messages"
     ):
         return
@@ -378,7 +370,7 @@ async def cmd_unpin(message: Message, lang: str, db: Database, settings: Setting
 
 @router.message(Command("del"))
 async def cmd_del(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "delete") or not await _bot_needs(
         message, lang, "can_delete_messages"
     ):
         return
@@ -412,7 +404,7 @@ async def purge_range(bot: Bot, chat_id: int, first_id: int, last_id: int) -> in
 
 @router.message(Command("purge"))
 async def cmd_purge(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang) or not await _require_right(
+    if not await require_right(message, db, settings, lang, "delete") or not await _bot_needs(
         message, lang, "can_delete_messages"
     ):
         return
@@ -498,7 +490,7 @@ async def cmd_admins(message: Message, lang: str) -> None:
 
 @router.message(Command("link", "invitelink"))
 async def cmd_link(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     try:
         link = await message.bot.export_chat_invite_link(message.chat.id)

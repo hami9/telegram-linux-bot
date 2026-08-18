@@ -30,8 +30,54 @@ HELP_CATEGORIES: tuple[str, ...] = (
     "antiflood",
     "ai",
     "alias",
+    "roles",
     "misc",
 )
+
+ROLE_OWNER = "owner"
+ROLE_ADMIN = "admin"
+ROLE_MEMBER = "member"
+
+BOT_RIGHTS: tuple[str, ...] = (
+    "ban",
+    "mute",
+    "warn",
+    "delete",
+    "pin",
+    "promote",
+    "settings",
+    "locks",
+    "notes",
+    "ai",
+    "alias",
+    "perms",
+)
+
+RIGHT_SOURCES: dict[str, str] = {
+    "ban": "can_restrict_members",
+    "mute": "can_restrict_members",
+    "warn": "can_restrict_members",
+    "delete": "can_delete_messages",
+    "pin": "can_pin_messages",
+    "promote": "can_promote_members",
+    "settings": "can_change_info",
+    "locks": "can_delete_messages",
+    "notes": "",
+    "ai": "",
+    "alias": "",
+    "perms": "never",
+}
+
+MEMBER_PERMISSIONS: dict[str, tuple[str, ...]] = {
+    "messages": ("can_send_messages",),
+    "media": ("can_send_photos", "can_send_videos", "can_send_audios", "can_send_documents"),
+    "other": ("can_send_other_messages", "can_send_voice_notes", "can_send_video_notes"),
+    "polls": ("can_send_polls",),
+    "links": ("can_add_web_page_previews",),
+    "invite": ("can_invite_users",),
+    "pin": ("can_pin_messages",),
+    "info": ("can_change_info",),
+}
 
 MUTED_PERMISSIONS = {
     "can_send_messages": False,

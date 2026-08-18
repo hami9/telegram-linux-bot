@@ -8,27 +8,20 @@ from bot.config import Settings
 from bot.db import Database
 from bot.filters import IsGroup
 from bot.handlers.notes import extract_media, send_stored
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.utils.formatting import clean
 from bot.utils.parsing import split_command_args
-from bot.utils.permissions import is_admin
 
 router = Router(name="wordfilters")
 router.message.filter(IsGroup())
 
 
-async def _require_admin(message: Message, db: Database, settings: Settings, lang: str) -> bool:
-    if message.from_user is None:
-        return False
-    if await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        return True
-    await message.reply(t("common.no_permission", lang))
-    return False
 
 
 @router.message(Command("filter", "addfilter"))
 async def cmd_filter(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "notes"):
         return
     args = split_command_args(message.text or message.caption)
     if not args:
@@ -55,7 +48,7 @@ async def cmd_filter(message: Message, lang: str, db: Database, settings: Settin
 
 @router.message(Command("stop", "rmfilter"))
 async def cmd_stop(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "notes"):
         return
     args = split_command_args(message.text or "")
     if not args:

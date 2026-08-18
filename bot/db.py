@@ -71,6 +71,15 @@ CREATE TABLE IF NOT EXISTS aliases (
     PRIMARY KEY (chat_id, name)
 );
 
+CREATE TABLE IF NOT EXISTS chat_roles (
+    chat_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    role TEXT DEFAULT 'member',
+    overrides TEXT DEFAULT '{}',
+    updated_at INTEGER DEFAULT 0,
+    PRIMARY KEY (chat_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS sudoers (
     user_id INTEGER PRIMARY KEY
 );
@@ -371,6 +380,80 @@ class Database:
     async def list_aliases(self, chat_id: int) -> list[str]:
         rows = await self._fetchall("SELECT name FROM aliases WHERE chat_id = ? ORDER BY name", (chat_id,))
         return [row["name"] for row in rows]
+
+    async def set_role(self, chat_id: int, user_id: int, role: str) -> None:
+        await self._execute(
+            "INSERT INTO chat_roles (chat_id, user_id, role, updated_at) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(chat_id, user_id) DO UPDATE SET role = excluded.role, updated_at = excluded.updated_at",
+            (chat_id, user_id, role, int(time.time())),
+        )
+
+    async def get_role(self, chat_id: int, user_id: int) -> str | None:
+        row = await self._fetchone(
+            "SELECT role FROM chat_roles WHERE chat_id = ? AND user_id = ?", (chat_id, user_id)
+        )
+        return row["role"] if row else None
+
+    async def list_roles(self, chat_id: int, role: str | None = None) -> list[tuple[int, str]]:
+        if role is None:
+            rows = await self._fetchall(
+                "SELECT user_id, role FROM chat_roles WHERE chat_id = ? ORDER BY role, user_id", (chat_id,)
+            )
+        else:
+            rows = await self._fetchall(
+                "SELECT user_id, role FROM chat_roles WHERE chat_id = ? AND role = ? ORDER BY user_id",
+                (chat_id, role),
+            )
+        return [(int(row["user_id"]), row["role"]) for row in rows]
+
+    async def get_overrides(self, chat_id: int, user_id: int) -> dict[str, bool]:
+        row = await self._fetchone(
+            "SELECT overrides FROM chat_roles WHERE chat_id = ? AND user_id = ?", (chat_id, user_id)
+        )
+        if row is None:
+            return {}
+        try:
+            data = json.loads(row["overrides"] or "{}")
+        except (TypeError, ValueError):
+            return {}
+        return {str(key): bool(value) for key, value in data.items()} if isinstance(data, dict) else {}
+
+    async def set_override(self, chat_id: int, user_id: int, right: str, value: bool) -> dict[str, bool]:
+        overrides = await self.get_overrides(chat_id, user_id)
+        overrides[right] = value
+        await self._execute(
+            "INSERT INTO chat_roles (chat_id, user_id, overrides, updated_at) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(chat_id, user_id) DO UPDATE SET overrides = excluded.overrides, updated_at = excluded.updated_at",
+            (chat_id, user_id, json.dumps(overrides), int(time.time())),
+        )
+        return overrides
+
+    async def clear_overrides(self, chat_id: int, user_id: int) -> None:
+        await self._execute(
+            "UPDATE chat_roles SET overrides = '{}', updated_at = ? WHERE chat_id = ? AND user_id = ?",
+            (int(time.time()), chat_id, user_id),
+        )
+
+    async def replace_staff(self, chat_id: int, staff: dict[int, str]) -> None:
+        keep = list(staff)
+        if keep:
+            placeholders = ",".join("?" for _ in keep)
+            await self.conn.execute(
+                f"UPDATE chat_roles SET role = 'member', overrides = '{{}}' "
+                f"WHERE chat_id = ? AND role != 'member' AND user_id NOT IN ({placeholders})",
+                (chat_id, *keep),
+            )
+        else:
+            await self.conn.execute(
+                "UPDATE chat_roles SET role = 'member', overrides = '{}' WHERE chat_id = ?", (chat_id,)
+            )
+        for user_id, role in staff.items():
+            await self.conn.execute(
+                "INSERT INTO chat_roles (chat_id, user_id, role, updated_at) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(chat_id, user_id) DO UPDATE SET role = excluded.role, updated_at = excluded.updated_at",
+                (chat_id, user_id, role, int(time.time())),
+            )
+        await self.conn.commit()
 
     async def add_sudo(self, user_id: int) -> None:
         await self._execute("INSERT OR IGNORE INTO sudoers (user_id) VALUES (?)", (user_id,))

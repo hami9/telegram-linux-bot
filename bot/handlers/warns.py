@@ -10,23 +10,17 @@ from bot.constants import PUNISH_MODES
 from bot.db import Database
 from bot.filters import IsGroup
 from bot.handlers.admin import punish
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.utils.formatting import clean, mention
 from bot.utils.parsing import split_command_args
-from bot.utils.permissions import bot_can, is_admin, is_chat_admin
+from bot.utils.permissions import bot_can, is_chat_admin
 from bot.utils.targeting import resolve_target
 
 router = Router(name="warns")
 router.message.filter(IsGroup())
 
 
-async def _require_admin(message: Message, db: Database, settings: Settings, lang: str) -> bool:
-    if message.from_user is None:
-        return False
-    if await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        return True
-    await message.reply(t("common.no_permission", lang))
-    return False
 
 
 async def apply_warn(
@@ -60,7 +54,7 @@ async def apply_warn(
 
 @router.message(Command("warn", "dwarn"))
 async def cmd_warn(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "warn"):
         return
     args = split_command_args(message.text or message.caption)
     target = await resolve_target(message, db, args)
@@ -88,7 +82,7 @@ async def cmd_warn(message: Message, lang: str, db: Database, settings: Settings
 
 @router.message(Command("unwarn", "rmwarn"))
 async def cmd_unwarn(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "warn"):
         return
     args = split_command_args(message.text or "")
     target = await resolve_target(message, db, args)
@@ -104,7 +98,7 @@ async def cmd_unwarn(message: Message, lang: str, db: Database, settings: Settin
 
 @router.message(Command("resetwarn", "resetwarns"))
 async def cmd_resetwarn(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "warn"):
         return
     args = split_command_args(message.text or "")
     target = await resolve_target(message, db, args)
@@ -142,7 +136,7 @@ async def cmd_warns(message: Message, lang: str, db: Database) -> None:
 
 @router.message(Command("warnlimit", "setwarnlimit"))
 async def cmd_warnlimit(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "warn"):
         return
     args = split_command_args(message.text or "")
     if not args or not args[0].isdigit() or not 1 <= int(args[0]) <= 20:
@@ -154,7 +148,7 @@ async def cmd_warnlimit(message: Message, lang: str, db: Database, settings: Set
 
 @router.message(Command("warnmode", "setwarnmode"))
 async def cmd_warnmode(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "warn"):
         return
     args = split_command_args(message.text or "")
     if not args or args[0].lower() not in PUNISH_MODES:

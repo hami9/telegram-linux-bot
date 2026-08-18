@@ -4,7 +4,15 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.config import Settings
-from bot.constants import FLOOD_LIMITS, HELP_CATEGORIES, LOCK_TYPES, PUNISH_MODES, WARN_LIMITS
+from bot.constants import (
+    BOT_RIGHTS,
+    FLOOD_LIMITS,
+    HELP_CATEGORIES,
+    LOCK_TYPES,
+    MEMBER_PERMISSIONS,
+    PUNISH_MODES,
+    WARN_LIMITS,
+)
 from bot.db import ChatConfig
 from bot.i18n import LANGUAGES, t
 
@@ -145,6 +153,32 @@ def warns_keyboard(lang: str, chat: ChatConfig) -> InlineKeyboardMarkup:
         row.append(InlineKeyboardButton(text=f"{marker}{mode}", callback_data=f"s:warns:mode:{mode}"))
     builder.row(*row)
     builder.row(InlineKeyboardButton(text=t("common.back", lang), callback_data="s:main"))
+    return builder.as_markup()
+
+
+def rights_keyboard(lang: str, user_id: int, rights: dict[str, bool]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for right in BOT_RIGHTS:
+        marker = "✅" if rights.get(right, False) else "❌"
+        builder.button(
+            text=f"{marker} {t(f'roles.right_{right}', lang)}",
+            callback_data=f"perm:{user_id}:{right}",
+        )
+    builder.adjust(2)
+    builder.row(InlineKeyboardButton(text=t("common.close", lang), callback_data="s:close"))
+    return builder.as_markup()
+
+
+def member_perms_keyboard(lang: str, user_id: int, allowed: dict[str, bool]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for name in MEMBER_PERMISSIONS:
+        marker = "✅" if allowed.get(name, True) else "🚫"
+        builder.button(
+            text=f"{marker} {t(f'roles.perm_{name}', lang)}",
+            callback_data=f"mperm:{user_id}:{name}",
+        )
+    builder.adjust(2)
+    builder.row(InlineKeyboardButton(text=t("common.close", lang), callback_data="s:close"))
     return builder.as_markup()
 
 

@@ -9,11 +9,12 @@ from bot.constants import PUNISH_MODES
 from bot.db import Database
 from bot.filters import IsGroup
 from bot.handlers.admin import punish
+from bot.utils.access import require_right
 from bot.i18n import t
 from bot.services.ratelimit import FloodTracker
 from bot.utils.formatting import mention
 from bot.utils.parsing import split_command_args
-from bot.utils.permissions import bot_can, is_admin, is_chat_admin
+from bot.utils.permissions import bot_can, is_chat_admin
 
 router = Router(name="antiflood")
 router.message.filter(IsGroup())
@@ -21,13 +22,6 @@ router.message.filter(IsGroup())
 tracker = FloodTracker()
 
 
-async def _require_admin(message: Message, db: Database, settings: Settings, lang: str) -> bool:
-    if message.from_user is None:
-        return False
-    if await is_admin(message.bot, db, message.chat.id, message.from_user.id, settings.owner_id):
-        return True
-    await message.reply(t("common.no_permission", lang))
-    return False
 
 
 @router.message(Command("antiflood", "flood"))
@@ -39,7 +33,7 @@ async def cmd_antiflood(message: Message, lang: str, db: Database) -> None:
 
 @router.message(Command("setflood"))
 async def cmd_setflood(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     args = split_command_args(message.text or "")
     value = args[0].lower() if args else ""
@@ -56,7 +50,7 @@ async def cmd_setflood(message: Message, lang: str, db: Database, settings: Sett
 
 @router.message(Command("setfloodmode", "floodmode"))
 async def cmd_setfloodmode(message: Message, lang: str, db: Database, settings: Settings) -> None:
-    if not await _require_admin(message, db, settings, lang):
+    if not await require_right(message, db, settings, lang, "settings"):
         return
     args = split_command_args(message.text or "")
     mode = args[0].lower() if args else ""

@@ -10,8 +10,8 @@ from bot.db import Database
 from bot.filters import IsGroup
 from bot.i18n import t
 from bot.utils.formatting import chunks, clean, mention_id
+from bot.utils.access import require_right
 from bot.utils.parsing import parse_user_token, split_command_args
-from bot.utils.permissions import is_admin
 
 router = Router(name="alias")
 router.message.filter(IsGroup())
@@ -78,13 +78,8 @@ async def cmd_alias(message: Message, lang: str, db: Database, settings: Setting
             await message.answer(part)
         return
 
-    is_privileged = message.from_user is not None and await is_admin(
-        message.bot, db, message.chat.id, message.from_user.id, settings.owner_id
-    )
-
     if action in {"add", "set"}:
-        if not is_privileged:
-            await message.reply(t("common.no_permission", lang))
+        if not await require_right(message, db, settings, lang, "alias"):
             return
         if len(args) < 2:
             await message.reply(t("alias.usage", lang))
@@ -100,8 +95,7 @@ async def cmd_alias(message: Message, lang: str, db: Database, settings: Setting
         return
 
     if action in {"del", "delete", "rm", "remove"}:
-        if not is_privileged:
-            await message.reply(t("common.no_permission", lang))
+        if not await require_right(message, db, settings, lang, "alias"):
             return
         if len(args) < 2:
             await message.reply(t("alias.usage", lang))
