@@ -1,0 +1,95 @@
+name: 🐞 Bug report
+description: Something in the bot does not work as documented
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, and what did the bot do instead of what you expected?
+      placeholder: I ran /warn while replying to a member and the bot stayed silent.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: Command involved
+      placeholder: /perms
+    validations:
+      required: false
+
+  - type: dropdown
+    id: chat-type
+    attributes:
+      label: Where did it happen
+      options:
+        - Supergroup
+        - Basic group
+        - Private chat
+        - Channel
+    validations:
+      required: true
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Interface language
+      options:
+        - English
+        - فارسی
+        - العربية
+        - Türkçe
+        - Русский
+        - Italiano
+        - 中文
+        - 日本語
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Bot version
+      description: The version shown by /about
+      placeholder: 2.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.3"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant output from the bot. Remove your bot token and API keys first.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The bot is an admin in that chat with the rights the command needs
+          required: true
+        - label: I removed every token and API key from what I pasted here
+          required: true

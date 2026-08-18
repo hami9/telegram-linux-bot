@@ -1,5 +1,12 @@
 # 🐧 Telegram Linux Terminal Bot
 
+[![CI](https://github.com/hami9/telegram-linux-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/hami9/telegram-linux-bot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue.svg)](https://www.python.org/)
+[![aiogram](https://img.shields.io/badge/aiogram-v3-2CA5E0.svg?logo=telegram&logoColor=white)](https://docs.aiogram.dev/)
+[![Languages](https://img.shields.io/badge/languages-8-orange.svg)](#-features)
+[![Free forever](https://img.shields.io/badge/price-free%20forever-brightgreen.svg)](#-credits)
+
 A complete Telegram group management bot with a Linux command-line feel, built with Python and **aiogram v3**. It ships moderation, warnings, notes, filters, locks, greetings and antiflood — plus a **Gemini AI core you can switch on and off from a button inside Telegram**, and an interface available in **8 languages**.
 
 Everything is free, forever. No premium tier, no paid features, no hidden gates. The source is public.
@@ -197,6 +204,20 @@ tests/                   pytest suite
 ۳. با `python main.py` ربات را بالا بیاور.
 ۴. ربات را به گروه اضافه کن، ادمینش کن و `/settings` را بزن؛ از همان‌جا با یک دکمه هوش مصنوعی را روشن یا خاموش کن و زبان گروه را از بین ۸ زبان انتخاب کن.
 ۵. ربات به‌محض ورود، اونر و ادمین‌های گروه را خودش می‌شناسد. اونر با `/perms` می‌تواند دسترسی هر ادمین را تک‌به‌تک کم یا زیاد کند و ادمین‌ها با `/mperms` تعیین می‌کنند یک ممبر چه چیزی بفرستد. `/staff` هم لیست کادر مدیریت را نشان می‌دهد.
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the setup, the house rules and how to add a language. Bugs and ideas go to [Issues](https://github.com/hami9/telegram-linux-bot/issues); security reports follow [SECURITY.md](SECURITY.md).
+
+Changes per version are listed in [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+## 📄 License
+
+Released under the [MIT License](LICENSE) — use it, change it, host it, sell nothing back to your users for it.
 
 ---
 

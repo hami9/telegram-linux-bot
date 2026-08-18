@@ -1,0 +1,37 @@
+name: ✨ Feature request
+description: Suggest a command, a setting or a language
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is missing
+      description: What do you want to do that the bot cannot do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How you imagine it
+      description: A command, a button in /settings, a permission — whatever fits.
+      placeholder: /pinlist to show every pinned message of the chat.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Moderation
+        - Roles and permissions
+        - AI core
+        - Languages
+        - Notes and filters
+        - Locks
+        - Greetings
+        - Antiflood
+        - Something else
+    validations:
+      required: true

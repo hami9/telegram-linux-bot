@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Ask the creator
+    url: https://t.me/ham1235i
+    about: Questions about running or hosting the bot
+  - name: 🔒 Report a security problem
+    url: https://github.com/hami9/telegram-linux-bot/security/advisories/new
+    about: Please do not open a public issue for security reports
